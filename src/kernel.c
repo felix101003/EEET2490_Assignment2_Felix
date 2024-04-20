@@ -20,11 +20,15 @@ void cli()
     static int index = 0;
     static int command_index = 0;
     char c;
+    int isUpLim = 0, isDownLim = 0;
 
     // Clear the buffer
     for (int i = 0; i < MAX_CMD_SIZE; i++) {
         cli_buffer[i] = '\0';
     }
+
+    // The initial variable will prevent the command history from looping
+    int initial = current_index;
 
     // Display OS name
     displayOS();
@@ -57,16 +61,45 @@ void cli()
             }
         // UP history
         } else if (c == '_') {
-            if (current_index > 0) {
-                current_index = (current_index - 1) % MAX_HISTORY;
+            if (isUpLim == 0) {
+                if (current_index == history_index)
+                {
+                    // If currently at the most recent command, save current input first
+                    strcpy(history[history_index % MAX_HISTORY], cli_buffer);
+                }
+
+                current_index = (current_index - 1 + MAX_HISTORY) % MAX_HISTORY;
                 deleteChar(cli_buffer);
                 strcpy(cli_buffer, history[current_index]);
                 index = strlen(cli_buffer);
-                uart_puts(cli_buffer);   
-            } else {
-                uart_puts("error");
+                uart_puts(cli_buffer);
+                isDownLim = 0;
             }
             
+            // Prevent looping 
+            if (current_index == (initial + 1) % MAX_HISTORY) {
+                isUpLim = 1;
+            }
+        // DOWN history
+        } else if (c == '+') {
+            if (isDownLim == 0) {
+                if (current_index == history_index)
+                {
+                    // If going back to the most recent command, retrieve the saved input
+                    strcpy(cli_buffer, history[current_index]);
+                }
+                current_index = (current_index + 1) % MAX_HISTORY;
+                deleteChar(cli_buffer);
+                strcpy(cli_buffer, history[current_index]);
+                index = strlen(cli_buffer);
+                uart_puts(cli_buffer);
+                isUpLim = 0;
+            }
+            
+            // Prevent looping 
+            if (current_index == initial) {
+                isDownLim = 1;
+            }   
         // Receive characters from keyboard          
         } else if (c != '\n') {
             if (command_index > 0) {
@@ -89,6 +122,14 @@ void cli()
             uart_puts(cli_buffer);
             uart_puts("\n");
 
+            strcpy(history[history_index % MAX_HISTORY], cli_buffer);
+            history_index++;
+            if (history_index >= MAX_HISTORY)
+            {
+                history_index = 0;
+            }
+            current_index = history_index;
+
             /* Compare with supported commands and execute */
             if (index > 0) {
                 if (strncasecmp(cli_buffer, commands[0], strlen(commands[0])) == 0) {
@@ -104,9 +145,7 @@ void cli()
                 }
             }
 
-            strcpy(history[history_index % MAX_HISTORY], cli_buffer);
-            history_index++;
-            current_index = history_index;
+            
 
             // Return to command line
             index = 0;
