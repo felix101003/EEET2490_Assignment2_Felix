@@ -12,6 +12,7 @@ char* commands[] = {
 
 int current_index = 0;
 int history_index = 0;
+int isRenew = 0;
 
 void cli()
 {
@@ -20,7 +21,7 @@ void cli()
     static int index = 0;
     static int command_index = 0;
     char c;
-    int isUpLim = 0, isDownLim = 0;
+    int isUpLim = 0, isDownLim = 1;
 
     // Clear the buffer
     for (int i = 0; i < MAX_CMD_SIZE; i++) {
@@ -61,6 +62,7 @@ void cli()
             }
         // UP history
         } else if (c == '_') {
+
             if (isUpLim == 0) {
                 if (current_index == history_index)
                 {
@@ -77,7 +79,7 @@ void cli()
             }
             
             // Prevent looping 
-            if (current_index == (initial + 1) % MAX_HISTORY) {
+            if ((current_index == ((initial + 1) % MAX_HISTORY) && isRenew == 1) || (isRenew == 0 && current_index == 0)) {
                 isUpLim = 1;
             }
         // DOWN history
@@ -127,6 +129,7 @@ void cli()
             if (history_index >= MAX_HISTORY)
             {
                 history_index = 0;
+                isRenew = 1;
             }
             current_index = history_index;
 
