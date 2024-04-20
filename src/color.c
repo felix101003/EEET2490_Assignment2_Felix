@@ -65,7 +65,6 @@ void setBackgroundColor(char* color) {
             return;
         }
     }
-    uart_puts("Invalid background color\n");
 }
 
 void setTextColor(char* color) {
@@ -77,5 +76,4 @@ void setTextColor(char* color) {
             return;
         }
     }
-    uart_puts("Invalid text color\n");
 }

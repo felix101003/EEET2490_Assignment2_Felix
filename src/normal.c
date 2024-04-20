@@ -27,9 +27,9 @@ void displayOS() {
 
 // Display help
 void displayHelp(char* clibuffer, char* commands[]) {
-    char* token = strtok(clibuffer, " \t");
+    char* token = strtok(clibuffer, " ");
     if (strcasecmp(token, HELP) == 0) {
-        token = strtok(NULL, " \t"); // Move to the next token
+        token = strtok(NULL, " "); // Move to the next token
         if (token == NULL) {
             displayBriefHelp(commands);
         } else {
@@ -37,7 +37,7 @@ void displayHelp(char* clibuffer, char* commands[]) {
             strcpy(helpCommand, token); // Copy the command to the buffer
             
             // Concatenate subsequent tokens into the help command
-            token = strtok(NULL, " \t");
+            token = strtok(NULL, " ");
             if (token != NULL) {
                 strcat(helpCommand, " ");
                 strcat(helpCommand, token);
@@ -90,21 +90,42 @@ void clear() {
 }
 
 void showInfo() {
-    mBox[0] = 6 * 4; // Buffer size in bytes
+    mBox[0] = 11 * 4; // Buffer size in bytes
     mBox[1] = MBOX_REQUEST;
 
-    mBox[2] = 0x00010002; // Tag identifier
+    mBox[2] = 0x00010002; // Tag identifier: GET_BOARD_REVISION
     mBox[3] = 4; // Value buffer size in bytes
     mBox[4] = 0; // Request code
-    mBox[5] = MBOX_TAG_LAST;
+    mBox[5] = 0; // Clear output buffer (response data is mBox[5])
+
+    mBox[6] = 0x00010003; // Tag identifier: GET_BOARD_MAC
+    mBox[7] = 6; // Value buffer size in bytes
+    mBox[8] = 0; // Request code
+    mBox[9] = 0; // Clear output buffer (response data is mBox[9])
+
+    mBox[10] = MBOX_TAG_LAST;
 
     if (mbox_call(ADDR(mBox), MBOX_CH_PROP)) {
-        uart_puts("\nResponse Code for whole message: ");
-        uart_hex(mBox[1]);
-
-        uart_puts("\n+ Response Code in Message TAG: ");
-        uart_hex(mBox[4]);
-        uart_puts("\nDATA: Board revision = ");
+        // Display board revision
+        uart_puts("Board revision = ");
         uart_hex(mBox[5]);
+
+        // Display board MAC address
+        uart_puts("\nBoard MAC address = ");
+        unsigned char* macBytes = (unsigned char*) &mBox[9];
+        for (int i = 0; i <= 5; i++)
+        {
+            uart_hex_byte(macBytes[i]);
+            if (i != 5)
+                uart_sendc(':');
+        }
+        uart_puts("\n");
     }
+}
+void deleteChar(char* buffer) {
+    int length = strlen(buffer);
+    for (int i = 0; i < length; i++) {
+        uart_puts("\b \b"); // Move cursor back, overwrite with space, move cursor back again
+    }
+    buffer[length] = '\0'; // Null-terminate the string to effectively delete the last character
 }

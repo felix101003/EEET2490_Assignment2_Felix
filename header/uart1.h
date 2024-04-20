@@ -21,3 +21,4 @@ char uart_getc();
 void uart_puts(char *s);
 void uart_hex(unsigned int d);
 void uart_dec(int num);
+void uart_hex_byte(unsigned char byte);

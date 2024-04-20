@@ -15,5 +15,6 @@ void displayBriefHelp(char* commands[]);
 void displayDetailHelp(char* detail);
 void clear();
 void showInfo();
+void deleteChar(char* str);
 
 #endif // NORMAL_H

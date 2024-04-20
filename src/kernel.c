@@ -10,46 +10,111 @@ char* commands[] = {
     SHOW_INFO
 };
 
+int current_index = 0;
+int history_index = 0;
+
 void cli()
 {
-	static char cli_buffer[MAX_CMD_SIZE];
-	static int index = 0;
+    static char cli_buffer[MAX_CMD_SIZE];
+    static char history[MAX_HISTORY][MAX_CMD_SIZE];
+    static int index = 0;
+    static int command_index = 0;
+    char c;
 
-	//read and send back each char
-	char c = uart_getc();
-	uart_sendc(c);
+    // Clear the buffer
+    for (int i = 0; i < MAX_CMD_SIZE; i++) {
+        cli_buffer[i] = '\0';
+    }
 
-	//put into a buffer until got new line character
-	if (c != '\n'){
-		cli_buffer[index] = c; //Store into the buffer
-		index++;
-	} else if (c == '\n'){
-		cli_buffer[index] = '\0';
-
-		uart_puts("\nGot commands: ");
-		uart_puts(cli_buffer); uart_puts("\n");
-
-		/* Compare with supported commands and execute
-		* ........................................... */
-        if (index > 0) {
-            if (strncasecmp(cli_buffer, commands[0], strlen(commands[0])-1) == 0) {
-                displayHelp(cli_buffer, commands);
-            } else if (strncasecmp(cli_buffer, commands[1], strlen(commands[1])-1) == 0) {
-                clear();
-            } else if (strncasecmp(cli_buffer, commands[2], strlen(commands[2])-1) == 0) {
-                setColor(cli_buffer);
-            } else if (strncasecmp(cli_buffer, commands[3], strlen(commands[3])-1) == 0) {
-                showInfo();
-            } else {
-                uart_puts("Command not found\n");
+    // Display OS name
+    displayOS();
+    
+    while (1) {
+        c = uart_getc();
+        
+        // Find all commands that match the cli_buffer and add to match array
+        char* match[MAX_COMMAND_SIZE];
+        int match_index = 0;
+        for (int i = 0; i < MAX_COMMAND_SIZE; i++) {
+            if (strncasecmp(cli_buffer, commands[i], strlen(cli_buffer)) == 0) {
+                match[match_index] = commands[i];
+                match_index++;
             }
+        } 
+        
+        // If tab is pressed, display the next matching command (only if there is a match)
+        if (c == '\t') {
+            if (match_index > 0) {
+                if (command_index == 0) {
+                    deleteChar(cli_buffer);
+                } else {
+                    deleteChar(match[(command_index-1) % (match_index)]);
+                }
+
+                index = strlen(match[command_index % match_index]);
+                uart_puts(match[command_index % match_index]); 
+                command_index++;
+            }
+        // UP history
+        } else if (c == '_') {
+            if (current_index > 0) {
+                current_index = (current_index - 1) % MAX_HISTORY;
+                deleteChar(cli_buffer);
+                strcpy(cli_buffer, history[current_index]);
+                index = strlen(cli_buffer);
+                uart_puts(cli_buffer);   
+            } else {
+                uart_puts("error");
+            }
+            
+        // Receive characters from keyboard          
+        } else if (c != '\n') {
+            if (command_index > 0) {
+                strcpy(cli_buffer, match[(command_index-1) % match_index]);
+                index = strlen(cli_buffer);
+                command_index = 0;
+            }
+            uart_sendc(c);
+            cli_buffer[index] = c;
+            index++;
+        // If enter is pressed, execute the command
+        } else {
+            if (command_index > 0) {
+                strcpy(cli_buffer, match[(command_index-1) % match_index]);
+                index = strlen(cli_buffer);
+                command_index = 0;
+            }
+            cli_buffer[index] = '\0';
+            uart_puts("\nGot command: ");
+            uart_puts(cli_buffer);
+            uart_puts("\n");
+
+            /* Compare with supported commands and execute */
+            if (index > 0) {
+                if (strncasecmp(cli_buffer, commands[0], strlen(commands[0])) == 0) {
+                    displayHelp(cli_buffer, commands);
+                } else if (strncasecmp(cli_buffer, commands[1], strlen(commands[1])) == 0) {
+                    clear();
+                } else if (strncasecmp(cli_buffer, commands[2], strlen(commands[2])) == 0) {
+                    setColor(cli_buffer);
+                } else if (strncasecmp(cli_buffer, commands[3], strlen(commands[3])) == 0) {
+                    showInfo();
+                } else {
+                    uart_puts("Command not found\n");
+                }
+            }
+
+            strcpy(history[history_index % MAX_HISTORY], cli_buffer);
+            history_index++;
+            current_index = history_index;
+
+            // Return to command line
+            index = 0;
+            break; // Exit the loop after processing one command
         }
-
-
-		//Return to command line
-		index = 0;
-	}
+    }     
 }
+
 
 
 void main() {
@@ -59,11 +124,9 @@ void main() {
     // Display welcome message
     displayWelcomeMessage();
 
-    // Display OS name
-    displayOS();
-
     //Loop forever
     while (1) {
+
         // Command-line Interface
         cli();
     }

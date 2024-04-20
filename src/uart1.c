@@ -131,3 +131,9 @@ void uart_dec(int num)
 
 	uart_puts(str);
 }
+
+void uart_hex_byte(unsigned char byte) {
+	char hexChars[] = "0123456789ABCDEF";
+    uart_sendc(hexChars[(byte >> 4) & 0x0F]);
+    uart_sendc(hexChars[byte & 0x0F]);
+}
