@@ -1,6 +1,6 @@
 #include "../header/mbox.h"
 #include "../header/gpio.h"
-#include "../header/uart1.h"
+#include "../header/uart0.h"
 // #include "./gcclib/stdint.h"
 
 /* Mailbox Data Buffer (each element is 32-bit)*/

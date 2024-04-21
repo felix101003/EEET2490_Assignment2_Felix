@@ -148,3 +148,9 @@ char* strcat(char *dest, const char *src) {
     *dest = '\0';
     return start;
 }
+
+void reset(char *str) {
+    for (int i = 0; i < MAX_CMD_SIZE; i++) {
+        str[i] = '\0';
+    }
+}

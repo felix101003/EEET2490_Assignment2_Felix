@@ -2,7 +2,7 @@
 #define COLOR_H
 
 #include "constant.h"
-#include "../header/uart1.h"
+#include "../header/uart0.h"
 #include "stringProcess.h"
 
 void setColor(char* cmd);

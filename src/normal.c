@@ -97,6 +97,7 @@ void showInfo() {
     mBox[3] = 4; // Value buffer size in bytes
     mBox[4] = 0; // Request code
     mBox[5] = 0; // Clear output buffer (response data is mBox[5])
+    unsigned int *revision = (unsigned int *) &(mBox[5]);
 
     mBox[6] = 0x00010003; // Tag identifier: GET_BOARD_MAC
     mBox[7] = 6; // Value buffer size in bytes
@@ -108,7 +109,24 @@ void showInfo() {
     if (mbox_call(ADDR(mBox), MBOX_CH_PROP)) {
         // Display board revision
         uart_puts("Board revision = ");
-        uart_hex(mBox[5]);
+        uart_hex(*revision);
+
+        // Display board model
+        if (*revision == RPI3B_BCM2837_1G_SONYUK) {
+            uart_puts(" (Board model: rpi-3B BCM2837 1GiB Sony UK)");
+        } else if (*revision == RPI2B_BCM2836_1G_SONYUK) {
+            uart_puts(" (Board model: rpi-2B BCM2836 1GiB Sony UK)");
+        } else if (*revision == RPI4B_BCM2711_2G_SONYUK) {
+            uart_puts(" (Board model: rpi-4B BCM2711 2GiB Sony UK)");
+        } else if (*revision == RPI1B_PLUS_BCM2835) {
+            uart_puts(" (Board model: rpi-1B+ BCM2835)");
+        } else if (*revision == RPI0_BCM2835_512M_SONYUK) {
+            uart_puts(" (Board model: rpi-Zero BCM2835 512MB Sony UK)");
+        } else if (*revision == RPI3B_PLUS_BCM2837_1G_SONYUK) {
+            uart_puts(" (Board model: rpi-3B+ BCM2837 1GiB Sony UK)");
+        } else {
+            uart_puts(" (Board model: Other model)");
+        }
 
         // Display board MAC address
         uart_puts("\nBoard MAC address = ");
@@ -127,5 +145,9 @@ void deleteChar(char* buffer) {
     for (int i = 0; i < length; i++) {
         uart_puts("\b \b"); // Move cursor back, overwrite with space, move cursor back again
     }
-    buffer[length] = '\0'; // Null-terminate the string to effectively delete the last character
 }
+
+void deleteOneChar() {
+    uart_puts("\b \b"); // Move cursor back, overwrite with space, move cursor back again
+}
+

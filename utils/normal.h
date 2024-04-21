@@ -3,7 +3,7 @@
 #define NORMAL_H
 
 #include "constant.h"
-#include "../header/uart1.h"
+#include "../header/uart0.h"
 #include "../header/mbox.h"
 #include "../utils/stringProcess.h"
 
@@ -16,5 +16,6 @@ void displayDetailHelp(char* detail);
 void clear();
 void showInfo();
 void deleteChar(char* str);
+void deleteOneChar();
 
 #endif // NORMAL_H
