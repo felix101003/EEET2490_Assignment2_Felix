@@ -164,7 +164,8 @@ void cli()
                     showInfo();
                 } else {
                     // uart_puts("Command not found\n");
-                    check_baud_rate();
+                    // check_baud_rate();
+                    check_bit_length();
                 }
             }
 

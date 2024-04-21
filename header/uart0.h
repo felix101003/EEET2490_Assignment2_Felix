@@ -1,5 +1,6 @@
 #include "gpio.h"
 #include "../utils/constant.h"
+#include "../utils/stringProcess.h"
 
 /* PL011 UART (UART0) registers */
 #define UART0_BASE	(MMIO_BASE + 0x201000)
@@ -159,3 +160,8 @@ void uart_dec(int num);
 void uart_hex_byte(unsigned char byte);
 void configure_baud_rate(int baud_rate);
 void check_baud_rate();
+void check_bit_length();
+void configure_bit(int data_bit_length, int stop_bit, char* parity_bit);
+int change_bit_length(int data_bit_length);
+int change_stop_bit(int stop_bit);
+int change_parity_bit(char *parity_bit);
