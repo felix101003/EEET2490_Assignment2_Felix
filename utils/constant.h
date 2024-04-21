@@ -67,6 +67,9 @@
 #define RPI3B_PLUS_BCM2837_1G_SONYUK 0x00a020d3
 #define RPI4B_BCM2711_2G_SONYUK 0x00b03111
 
+// Board configuration
+#define UART_CLOCK 48000000
+
 #define NULL ((void *)0)
 
 #endif // CONSTANT_H

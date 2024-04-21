@@ -52,9 +52,8 @@ void uart_init()
 	Integer part register UART0_IBRD  = integer part of Divider
 	Fraction part register UART0_FBRD = (Fractional part * 64) + 0.5 */
 
-	// 19200 baud
-	UART0_IBRD = 156;
-	UART0_FBRD = 17;
+	// Baud rate
+	configure_baud_rate(115200);
 
 	/* Set up the Line Control Register */
 	/* Enable FIFO */
@@ -161,8 +160,30 @@ void uart_dec(int num)
 	uart_puts(str);
 }
 
+// Display a byte in hexadecimal format
 void uart_hex_byte(unsigned char byte) {
 	char hexChars[] = "0123456789ABCDEF";
     uart_sendc(hexChars[(byte >> 4) & 0x0F]);
     uart_sendc(hexChars[byte & 0x0F]);
+}
+
+
+// Function to configure the baud rate of the UART
+void configure_baud_rate(int baud_rate) {
+	unsigned int integerPart = UART_CLOCK / (16 * baud_rate);
+    float actual = ((float) UART_CLOCK)/ (16 * baud_rate);
+
+	float fractionalPart = (actual - integerPart);
+
+	// Baud rate
+	UART0_IBRD = integerPart;
+	UART0_FBRD = (int)(fractionalPart * 64 + 0.5);
+}
+
+void check_baud_rate() {
+	uart_puts("Baud rate: ");
+	uart_dec(UART0_IBRD);
+	uart_puts(" ");
+	uart_dec(UART0_FBRD);
+	uart_puts("\n");
 }

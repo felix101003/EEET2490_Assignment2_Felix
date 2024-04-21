@@ -1,4 +1,5 @@
 #include "gpio.h"
+#include "../utils/constant.h"
 
 /* PL011 UART (UART0) registers */
 #define UART0_BASE	(MMIO_BASE + 0x201000)
@@ -156,3 +157,5 @@ void uart_puts(char *s);
 void uart_hex(unsigned int d);
 void uart_dec(int num);
 void uart_hex_byte(unsigned char byte);
+void configure_baud_rate(int baud_rate);
+void check_baud_rate();

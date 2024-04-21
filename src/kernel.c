@@ -163,7 +163,8 @@ void cli()
                 } else if (strcasecmp(cli_buffer, commands[3]) == 0) {
                     showInfo();
                 } else {
-                    uart_puts("Command not found\n");
+                    // uart_puts("Command not found\n");
+                    check_baud_rate();
                 }
             }
 
