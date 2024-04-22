@@ -17,5 +17,9 @@ void clear();
 void showInfo();
 void deleteChar(char* str);
 void deleteOneChar();
+void update_baud_rate(char* buffer, int* baudrate);
+void update_data_length(char* buffer, int* length);
+void update_stop_bit(char* buffer, int* stop);
+void update_parity_bit(char* buffer, char** parity);
 
 #endif // NORMAL_H

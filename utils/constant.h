@@ -26,7 +26,7 @@
 // Maximum length
 #define MAX_CMD_SIZE 100
 #define MAX_COLOR_SIZE 8
-#define MAX_COMMAND_SIZE 4
+#define MAX_COMMAND_SIZE 10
 #define MAX_HISTORY 1000
 
 #define INTIAL_NAME "FelixOS> "
@@ -58,6 +58,15 @@
 #define HELP "help"
 #define CLEAR "clear"
 #define SHOW_INFO "showinfo"
+
+// Command list to configure UART and check configuration
+#define BAUD_RATE "baudrate"
+#define STOP "stop"
+#define PARITY "parity"
+#define LENGTH "length"
+#define HANDSHAKE "handshake"
+#define CHECK "check"
+
 
 // Model list
 #define RPI0_BCM2835_512M_SONYUK 0x00900092

@@ -151,7 +151,7 @@
 #define UART0_TDR	(* (volatile unsigned int*)(UART0_BASE + 0x8C))
 
 /* Function prototypes */
-void uart_init();
+void uart_init(int baud_rate, int data_bit_length, int stop_bit, char* parity_bit);
 void uart_sendc(char c);
 char uart_getc();
 void uart_puts(char *s);
@@ -160,7 +160,6 @@ void uart_dec(int num);
 void uart_hex_byte(unsigned char byte);
 void configure_baud_rate(int baud_rate);
 void check_baud_rate();
-void check_bit_length();
 void configure_bit(int data_bit_length, int stop_bit, char* parity_bit);
 int change_bit_length(int data_bit_length);
 int change_stop_bit(int stop_bit);

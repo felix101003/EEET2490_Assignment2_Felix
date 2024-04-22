@@ -10,3 +10,4 @@ char* strchr(const char *s, int c);
 char* strcpy(char *dest, const char *src);
 char* strcat(char *dest, const char *src);
 void reset(char *s);
+int atoi(char *s);

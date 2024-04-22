@@ -7,11 +7,25 @@ char* commands[] = {
     HELP,
     CLEAR,
     SET_COLOR,
-    SHOW_INFO
+    SHOW_INFO,
+    BAUD_RATE,
+    LENGTH,
+    STOP,
+    PARITY,
+    HANDSHAKE,
+    CHECK
 };
+// Set up the UART by default
+int baud_rate = 115200;
+int data_bit_length = 8;
+int stop_bit = 1;
+char* parity_bit = "none";
 
+// Index for command and commandHistory
 int current_index = 0;
 int history_index = 0;
+
+// Overwrite the history when it reaches the limit capacity
 int isRenew = 0;
 
 void cli()
@@ -154,18 +168,51 @@ void cli()
 
             /* Compare with supported commands and execute */
             if (index > 0) {
+                // "help" command
                 if (strncasecmp(cli_buffer, commands[0], strlen(commands[0])) == 0) {
                     displayHelp(cli_buffer, commands);
+
+                // "clear" command
                 } else if (strcasecmp(cli_buffer, commands[1]) == 0) {
                     clear();
+
+                // "set color" command
                 } else if (strncasecmp(cli_buffer, commands[2], strlen(commands[2])) == 0) {
                     setColor(cli_buffer);
+                
+                // "showinfo" command
                 } else if (strcasecmp(cli_buffer, commands[3]) == 0) {
                     showInfo();
+                
+                // "baudrate" command
+                } else if (strncasecmp(cli_buffer, commands[4], strlen(commands[4])) == 0) {
+                    update_baud_rate(cli_buffer, &baud_rate);
+                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
+                
+                // "length" command
+                } else if (strncasecmp(cli_buffer, commands[5], strlen(commands[5])) == 0) {
+                    update_data_length(cli_buffer, &data_bit_length);
+                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
+
+                // "stop" command
+                } else if (strncasecmp(cli_buffer, commands[6], strlen(commands[6])) == 0) {
+                    update_stop_bit(cli_buffer, &stop_bit);
+                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
+                
+                // "parity" command
+                } else if (strncasecmp(cli_buffer, commands[7], strlen(commands[7])) == 0) {
+                    update_parity_bit(cli_buffer, &parity_bit);
+                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
+                
+                // "handshake" command
+                } else if (strncasecmp(cli_buffer, commands[8], strlen(commands[8])) == 0) {
+                    uart_puts("Handshake\n");
+                
+                // "check" command
+                } else if (strcasecmp(cli_buffer, commands[9]) == 0) {
+                    check_baud_rate();
                 } else {
-                    // uart_puts("Command not found\n");
-                    // check_baud_rate();
-                    check_bit_length();
+                    uart_puts("Command not found\n");
                 }
             }
 
@@ -181,8 +228,7 @@ void cli()
 
 
 void main() {
-    // Set up the UART
-    uart_init();
+    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
 
     // Display welcome message
     displayWelcomeMessage();

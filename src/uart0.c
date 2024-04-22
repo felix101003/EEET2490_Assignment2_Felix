@@ -3,7 +3,7 @@
 /**
  * Set baud rate and characteristics and map to GPIO
  */
-void uart_init()
+void uart_init(int baud_rate, int data_bit_length, int stop_bit, char* parity_bit)
 {
 	unsigned int r;
 
@@ -53,10 +53,10 @@ void uart_init()
 	Fraction part register UART0_FBRD = (Fractional part * 64) + 0.5 */
 
 	// Baud rate
-	configure_baud_rate(115200);
+	configure_baud_rate(baud_rate);
 
 	/* Set up the Line Control Register */
-	configure_bit(5, 1, "even"); // 8 bit, 1 stop bit, no parity
+	configure_bit(data_bit_length, stop_bit, parity_bit);
 
 	/* Enable UART0, receive, and transmit */
 	UART0_CR = 0x301; // enable Tx, Rx, FIFO
@@ -164,82 +164,79 @@ void uart_hex_byte(unsigned char byte) {
     uart_sendc(hexChars[byte & 0x0F]);
 }
 
-
 // Function to configure the baud rate of the UART
 void configure_baud_rate(int baud_rate) {
-	unsigned int integerPart = UART_CLOCK / (16 * baud_rate);
-    float actual = ((float) UART_CLOCK)/ (16 * baud_rate);
+    unsigned int integerPart = UART_CLOCK / (16 * (baud_rate));
+    float actual = ((float) UART_CLOCK) / (16 * (baud_rate));
+    float fractionalPart = (actual - integerPart);
 
-	float fractionalPart = (actual - integerPart);
-
-	// Baud rate
-	UART0_IBRD = integerPart;
-	UART0_FBRD = (int)(fractionalPart * 64 + 0.5);
+    // Baud rate
+    UART0_IBRD = integerPart;
+    UART0_FBRD = (int)(fractionalPart * 64 + 0.5);
 }
 
+// Function to configure data bit length, stop bit, and parity bit of the UART
 void configure_bit(int data_bit_length, int stop_bit, char* parity_bit) {
-	// Set up the Line Control Register
-	// Enable FIFO and set up bit length, stop bit, and parity bit
-	UART0_LCRH = UART0_LCRH_FEN | change_bit_length(data_bit_length) | change_stop_bit(stop_bit) | change_parity_bit(parity_bit);
+    // Set up the Line Control Register
+    // Enable FIFO and set up bit length, stop bit, and parity bit
+    UART0_LCRH = UART0_LCRH_FEN | change_bit_length(data_bit_length) | change_stop_bit(stop_bit) | change_parity_bit(parity_bit);
 }
 
+// Function to configure handshake control of the UART
 void configure_handshaking_control(int status) {
-	if (status) {
-		UART0_CR = UART0_CR_CTSEN | UART0_CR_RTSEN | 0x301;
-	} else {
-		UART0_CR = 0x301;
-	}
+    if (status) {
+        UART0_CR = UART0_CR_CTSEN | UART0_CR_RTSEN | 0x301;
+    } else {
+        UART0_CR = 0x301;
+    }
 }
-	
 
+// Function to change data bit length
 int change_bit_length(int data_bit_length) {
-	switch (data_bit_length) {
-		case 5:
-			return UART0_LCRH_WLEN_5BIT;
-		case 6:
-			return UART0_LCRH_WLEN_6BIT;
-		case 7:
-			return UART0_LCRH_WLEN_7BIT;
-		case 8:
-			return UART0_LCRH_WLEN_8BIT;
-		default:
-			return UART0_LCRH_WLEN_8BIT;
-	}
+    switch (data_bit_length) {
+        case 5:
+            return UART0_LCRH_WLEN_5BIT;
+        case 6:
+            return UART0_LCRH_WLEN_6BIT;
+        case 7:
+            return UART0_LCRH_WLEN_7BIT;
+        case 8:
+            return UART0_LCRH_WLEN_8BIT;
+        default:
+            return UART0_LCRH_WLEN_8BIT;
+    }
 }
 
+// Function to change stop bit
 int change_stop_bit(int stop_bit) {
-	switch (stop_bit) {
-		case 1:
-			return 0;
-		case 2:
-			return UART0_LCRH_STP2;
-		default:
-			return 0;
-	}
+    switch (stop_bit) {
+        case 1:
+            return 0;
+        case 2:
+            return UART0_LCRH_STP2;
+        default:
+            return 0;
+    }
 }
 
+// Function to change parity bit
 int change_parity_bit(char *parity_bit) {
-	if (strcasecmp(parity_bit, "none") == 0) {
-		return 0;
-	} else if (strcasecmp(parity_bit, "even") == 0) {
-		return UART0_LCRH_EPS | UART0_LCRH_PEN;
-	} else if (strcasecmp(parity_bit, "odd") == 0) {
-		return UART0_LCRH_PEN;
-	} else {
-		return 0;
-	}
+    if (strcasecmp(parity_bit, "none") == 0) {
+        return 0;
+    } else if (strcasecmp(parity_bit, "even") == 0) {
+        return UART0_LCRH_EPS | UART0_LCRH_PEN;
+    } else if (strcasecmp(parity_bit, "odd") == 0) {
+        return UART0_LCRH_PEN;
+    } else {
+        return 0;
+    }
 }
-
 
 void check_baud_rate() {
 	uart_puts("Baud rate: ");
-	uart_dec(UART0_IBRD);
-	uart_puts(" ");
-	uart_dec(UART0_FBRD);
+	uart_dec(UART_CLOCK / (16 * (UART0_IBRD + (float) UART0_FBRD / 64)));
 	uart_puts("\n");
-}
 
-void check_bit_length() {
 	uart_puts("Bit length: ");
 	switch (UART0_LCRH & (3 << 5)) {
 		case UART0_LCRH_WLEN_5BIT:
@@ -258,13 +255,22 @@ void check_bit_length() {
 			uart_puts("8\n");
 			break;
 	}
-}
 
-void check_stop_bit() {
 	uart_puts("Stop bit: ");
 	if (UART0_LCRH & UART0_LCRH_STP2) {
 		uart_puts("2\n");
 	} else {
 		uart_puts("1\n");
+	}
+
+	uart_puts("Parity bit: ");
+	if (UART0_LCRH & UART0_LCRH_PEN) {
+		if (UART0_LCRH & UART0_LCRH_EPS) {
+			uart_puts("Even\n");
+		} else {
+			uart_puts("Odd\n");
+		}
+	} else {
+		uart_puts("None\n");
 	}
 }

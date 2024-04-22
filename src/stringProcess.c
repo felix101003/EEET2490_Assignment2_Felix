@@ -124,6 +124,8 @@ char *strchr(const char *str, int c)
     return NULL;
 }
 
+
+// Function to copy a string
 char* strcpy(char *dest, const char *src) {
     char *start = dest;
     while (*src) {
@@ -135,6 +137,7 @@ char* strcpy(char *dest, const char *src) {
     return start;
 }
 
+// Functino to concatenate two strings
 char* strcat(char *dest, const char *src) {
     char *start = dest;
     while (*dest) {
@@ -149,8 +152,24 @@ char* strcat(char *dest, const char *src) {
     return start;
 }
 
+// Function to reset a string
 void reset(char *str) {
     for (int i = 0; i < MAX_CMD_SIZE; i++) {
         str[i] = '\0';
     }
+}
+
+
+// Fucntion to convert a string to an integer
+int atoi(char *str) {
+    int num = 0;
+    while (*str) {
+        // If not a number
+        if (*str < '0' || *str > '9') {
+            return -1;
+        }
+        num = num * 10 + (*str - '0');
+        str++;
+    }
+    return num;
 }
