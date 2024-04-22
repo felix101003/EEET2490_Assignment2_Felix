@@ -20,6 +20,7 @@ void deleteOneChar();
 void update_baud_rate(char* buffer, int* baudrate);
 void update_data_length(char* buffer, int* length);
 void update_stop_bit(char* buffer, int* stop);
-void update_parity_bit(char* buffer, char** parity);
+void update_parity_bit(char* buffer, int* parity);
+void update_handshake_control(char* buffer, int* handshake);
 
 #endif // NORMAL_H

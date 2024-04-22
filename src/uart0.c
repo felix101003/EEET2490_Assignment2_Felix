@@ -3,7 +3,7 @@
 /**
  * Set baud rate and characteristics and map to GPIO
  */
-void uart_init(int baud_rate, int data_bit_length, int stop_bit, char* parity_bit)
+void uart_init(int baud_rate, int data_bit_length, int stop_bit, int parity_bit, int handshake)
 {
 	unsigned int r;
 
@@ -59,7 +59,8 @@ void uart_init(int baud_rate, int data_bit_length, int stop_bit, char* parity_bi
 	configure_bit(data_bit_length, stop_bit, parity_bit);
 
 	/* Enable UART0, receive, and transmit */
-	UART0_CR = 0x301; // enable Tx, Rx, FIFO
+	// UART0_CR = 0x301; // enable Tx, Rx, FIFO
+	configure_handshaking_control(handshake);
 }
 
 /**
@@ -176,7 +177,7 @@ void configure_baud_rate(int baud_rate) {
 }
 
 // Function to configure data bit length, stop bit, and parity bit of the UART
-void configure_bit(int data_bit_length, int stop_bit, char* parity_bit) {
+void configure_bit(int data_bit_length, int stop_bit, int parity_bit) {
     // Set up the Line Control Register
     // Enable FIFO and set up bit length, stop bit, and parity bit
     UART0_LCRH = UART0_LCRH_FEN | change_bit_length(data_bit_length) | change_stop_bit(stop_bit) | change_parity_bit(parity_bit);
@@ -184,7 +185,7 @@ void configure_bit(int data_bit_length, int stop_bit, char* parity_bit) {
 
 // Function to configure handshake control of the UART
 void configure_handshaking_control(int status) {
-    if (status) {
+    if (status == 1) {
         UART0_CR = UART0_CR_CTSEN | UART0_CR_RTSEN | 0x301;
     } else {
         UART0_CR = 0x301;
@@ -220,24 +221,28 @@ int change_stop_bit(int stop_bit) {
 }
 
 // Function to change parity bit
-int change_parity_bit(char *parity_bit) {
-    if (strcasecmp(parity_bit, "none") == 0) {
-        return 0;
-    } else if (strcasecmp(parity_bit, "even") == 0) {
-        return UART0_LCRH_EPS | UART0_LCRH_PEN;
-    } else if (strcasecmp(parity_bit, "odd") == 0) {
-        return UART0_LCRH_PEN;
-    } else {
-        return 0;
-    }
+int change_parity_bit(int parity_bit) {
+    switch (parity_bit) {
+		case 0:
+			return 0;
+		case 1:
+			return UART0_LCRH_PEN;
+		case 2:
+			return UART0_LCRH_PEN | UART0_LCRH_EPS;
+		default:
+			return 0;
+	}
 }
 
+
 void check_baud_rate() {
+	// Check baud rate
 	uart_puts("Baud rate: ");
 	uart_dec(UART_CLOCK / (16 * (UART0_IBRD + (float) UART0_FBRD / 64)));
 	uart_puts("\n");
 
-	uart_puts("Bit length: ");
+	// Check number of data bit
+	uart_puts("Nunmber of data bit: ");
 	switch (UART0_LCRH & (3 << 5)) {
 		case UART0_LCRH_WLEN_5BIT:
 			uart_puts("5\n");
@@ -256,7 +261,8 @@ void check_baud_rate() {
 			break;
 	}
 
-	uart_puts("Stop bit: ");
+	// Check number stop bit
+	uart_puts("Number of stop bit: ");
 	if (UART0_LCRH & UART0_LCRH_STP2) {
 		uart_puts("2\n");
 	} else {
@@ -272,5 +278,13 @@ void check_baud_rate() {
 		}
 	} else {
 		uart_puts("None\n");
+	}
+
+	uart_puts("Handshake control: ");
+
+	if (UART0_CR == (UART0_CR_CTSEN | UART0_CR_RTSEN | 0x301)) {
+		uart_puts("CTS/RTS handshake is enabled\n");
+	} else {
+		uart_puts("CTS/RTS handshake is disabled\n");
 	}
 }

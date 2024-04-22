@@ -15,11 +15,12 @@ char* commands[] = {
     HANDSHAKE,
     CHECK
 };
-// Set up the UART by default
+// Set up the UART by default: baud rate = 115200, data bit length = 8, stop bit = 1, parity bit = none, turn off CTS/RTS handshake
 int baud_rate = 115200;
 int data_bit_length = 8;
 int stop_bit = 1;
-char* parity_bit = "none";
+int parity_bit = 0;
+int handshake = 0;
 
 // Index for command and commandHistory
 int current_index = 0;
@@ -187,26 +188,27 @@ void cli()
                 // "baudrate" command
                 } else if (strncasecmp(cli_buffer, commands[4], strlen(commands[4])) == 0) {
                     update_baud_rate(cli_buffer, &baud_rate);
-                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
+                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
                 
                 // "length" command
                 } else if (strncasecmp(cli_buffer, commands[5], strlen(commands[5])) == 0) {
                     update_data_length(cli_buffer, &data_bit_length);
-                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
+                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
 
                 // "stop" command
                 } else if (strncasecmp(cli_buffer, commands[6], strlen(commands[6])) == 0) {
                     update_stop_bit(cli_buffer, &stop_bit);
-                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
+                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
                 
                 // "parity" command
                 } else if (strncasecmp(cli_buffer, commands[7], strlen(commands[7])) == 0) {
                     update_parity_bit(cli_buffer, &parity_bit);
-                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
+                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
                 
                 // "handshake" command
                 } else if (strncasecmp(cli_buffer, commands[8], strlen(commands[8])) == 0) {
-                    uart_puts("Handshake\n");
+                    update_handshake_control(cli_buffer, &handshake);
+                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
                 
                 // "check" command
                 } else if (strcasecmp(cli_buffer, commands[9]) == 0) {
@@ -228,7 +230,8 @@ void cli()
 
 
 void main() {
-    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit);
+    // Initialize UART with default configuration
+    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
 
     // Display welcome message
     displayWelcomeMessage();

@@ -22,7 +22,7 @@ char* commandsFullInfo[] = {
     "length: This command sets the length of data bits. Type \"length [number of data bits]\", number of data bits must be 5, 6, 7 or 8.\n",
     "stop: This command sets the number of stop bits. Type \"stop [number of stop bits]\", number of stop bits must be 1 or 2.\n",
     "parity: This command sets the parity bit. Type \"parity [parity bit]\", parity bit must be 'none', 'even' or 'odd'.\n",
-    "handshake: This command configures the handshake control of the UART. Type \"handshake [status]\", status must be 0 or 1.\n",
+    "handshake: This command configures the handshake control of the UART. Type \"handshake [status]\", status must be 'on' or 'off. 'off' is to turn off RTS/CTS handshaking, 'on' is to turn on RTS/CTS handshaking\n",
     "check: This command checks the current configuration of the UART including UART's current baud rate, number of data bit, number of stop bit, parity bit and handshake control\n"
 };
 
@@ -194,6 +194,11 @@ void update_baud_rate(char* buffer, int* baudrate) {
     }
     if (baud_rate != -1) {
         *baudrate = baud_rate; // Dereference and assign the new value to baudrate
+
+        // Show success message
+        uart_puts("Set up baud rate to ");
+        uart_dec(baud_rate);
+        uart_puts(" successfully\n");
     }
 }
 
@@ -221,6 +226,11 @@ void update_data_length(char* buffer, int* length) {
     }
     if (data_bit_length != -1) {
         *length = data_bit_length; // Dereference and assign the new value to length
+
+        // Show success message
+        uart_puts("Set up the number of data bit to ");
+        uart_dec(data_bit_length);
+        uart_puts(" successfully\n");
     }
 }
 
@@ -248,14 +258,19 @@ void update_stop_bit(char* buffer, int* stop) {
     }
     if (stop_bit != -1) {
         *stop = stop_bit; // Dereference and assign the new value to stop
+
+        // Show success message
+        uart_puts("Set up the number of stop bit to ");
+        uart_dec(stop_bit);
+        uart_puts(" successfully\n");
     }
 }
 
-void update_parity_bit(char* buffer, char** parity) {
+void update_parity_bit(char* buffer, int* parity) {
     char* token = strtok(buffer, " ");
     token = strtok(NULL, " "); // Skip the first token "parity"
     int count = 0;
-    char* parity_bit = NULL;
+    int parity_bit = -1;
 
     while (token != NULL) {
         if (count == 1) {
@@ -263,16 +278,67 @@ void update_parity_bit(char* buffer, char** parity) {
             return;
         }
 
-        parity_bit = token;
-        count++;
-        if (strcasecmp(parity_bit, "none") != 0 && strcasecmp(parity_bit, "even") != 0 && strcasecmp(parity_bit, "odd") != 0) {
+        if (strcasecmp(token, "none") == 0) {
+            parity_bit = 0;
+        } else if (strcasecmp(token, "odd") == 0) {
+            parity_bit = 1;
+        } else if (strcasecmp(token, "even") == 0) {
+            parity_bit = 2;
+        } else {
             uart_puts("Invalid parity bit\n");
+            return;
+        }
+
+        count++;
+        token = strtok(NULL, " ");
+    }
+    if (parity_bit != -1) {
+        *parity = parity_bit; // Dereference and assign the new value to parity
+
+        // Show success message
+        uart_puts("Set up");
+        if (parity_bit == 0) {
+            uart_puts(" none");
+        } else if (parity_bit == 1) {
+            uart_puts(" odd");
+        } else if (parity_bit == 2) {
+            uart_puts(" even");
+        }
+        uart_puts(" parity configuration successfully\n");
+    }
+}
+
+void update_handshake_control(char* buffer, int* handshake) {
+    char* token = strtok(buffer, " ");
+    token = strtok(NULL, " "); // Skip the first token "handshake"
+    int count = 0;
+    int handshake_status = -1;
+
+    while (token != NULL) {
+        if (count == 1) {
+            uart_puts("Multiple handshake status. Please check your command\n");
+            return;
+        }
+
+        if (strcasecmp(token, "on") == 0) {
+            handshake_status = 1;
+        } else if (strcasecmp(token, "off") == 0) {
+            handshake_status = 0;
+        } else {
+            uart_puts("Invalid handshake command\n");
             return;
         }
 
         token = strtok(NULL, " ");
     }
-    if (parity_bit != NULL) {
-        *parity = parity_bit; // Dereference and assign the new value to parity
+    if (handshake_status != -1) {
+        *handshake = handshake_status; // Dereference and assign the new value to handshake
+
+        // Show success message
+        if (handshake_status == 0) {
+            uart_puts("CTS/RTS handshaking is turned off\n");
+        } else if (handshake_status == 1) {
+            uart_puts("CTS/RTS handshaking is turned on\n");
+        }
     }
 }
