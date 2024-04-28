@@ -12,6 +12,8 @@
     #define MMIO_BASE       0xFE000000
 #endif
 
+
+
 //Define GPIO Registers based on their addresses
 #define GPFSEL0         (* (volatile unsigned int*)(MMIO_BASE+0x00200000))
 #define GPFSEL1         (* (volatile unsigned int*)(MMIO_BASE+0x00200004))

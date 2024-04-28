@@ -1,3 +1,4 @@
+// -----------------------------------constant.h -------------------------------------
 #ifndef CONSTANT_H
 #define CONSTANT_H
 
@@ -54,7 +55,7 @@
 #define RESET_BG "\033[0m"\
 
 // Command list
-#define SET_COLOR "set color"
+#define SET_COLOR "setcolor"
 #define HELP "help"
 #define CLEAR "clear"
 #define SHOW_INFO "showinfo"

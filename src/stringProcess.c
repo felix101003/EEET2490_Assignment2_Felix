@@ -1,5 +1,7 @@
+// -----------------------------------stringProcess.c -------------------------------------
 #include "../utils/stringProcess.h"
 
+// Function to convert a character to lower case
 int tolower(int c) {
     if (c >= 'A' && c <= 'Z') {
         return c + ('a' - 'A');

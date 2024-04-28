@@ -1,5 +1,7 @@
+// -----------------------------------normal.c -------------------------------------
 #include "../utils/normal.h"
 
+// Declare the set of brief info of commands available
 char* commandsBriefInfo[] = {
     "For more information on a specific command, type \"help [command_name]\"\n",
     "Clear the screen\n",
@@ -13,12 +15,13 @@ char* commandsBriefInfo[] = {
     "Check the current configuration of the UART\n"
 };
 
+// Declare the set of full info of commands available
 char* commandsFullInfo[] = {
     "help: This command offers brief descriptions of available commands. To obtain detailed information about a specific command, type \"help [command_name]\"\n",
     "clear: This command clears the screen and scrolls down to the current position of the cursor. \n",
     "set color: This command sets the text color and/or background color of the console. Use '-t' flag followed by the color to change text color, use '-b' flag followed by the color to change background color. Supported colors are: BLACK, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN, WHITE. \n",
     "showinfo: This command displays the revision and MAC address of the board you are currenly working with. \n",
-    "baudrate: This command configures the baud rate of the UART. Type \"baudrate [baud_rate]\", baud_rate must be a non-zero positive integer.\n",
+    "baudrate: This command configures the baud rate of the UART. Type \"baudrate [baud_rate]\", supported baud rates are 9600, 14400, 19200, 38400, 57600, 115200, 230400, 460800, 921600.\n",
     "length: This command sets the length of data bits. Type \"length [number of data bits]\", number of data bits must be 5, 6, 7 or 8.\n",
     "stop: This command sets the number of stop bits. Type \"stop [number of stop bits]\", number of stop bits must be 1 or 2.\n",
     "parity: This command sets the parity bit. Type \"parity [parity bit]\", parity bit must be 'none', 'even' or 'odd'.\n",
@@ -37,7 +40,7 @@ void displayOS() {
 }
 
 
-// Display help
+// Process help command
 void displayHelp(char* clibuffer, char* commands[]) {
     char* token = strtok(clibuffer, " ");
     token = strtok(NULL, " "); // Skip the first token "help"
@@ -109,8 +112,9 @@ void clear() {
     uart_puts("\033[2J\033[H");
 }
 
+// Show the board's revision and MAC address with mailbox
 void showInfo() {
-    mBox[0] = 11 * 4; // Buffer size in bytes
+    mBox[0] = 12 * 4; // Buffer size in bytes
     mBox[1] = MBOX_REQUEST;
 
     mBox[2] = 0x00010002; // Tag identifier: GET_BOARD_REVISION
@@ -160,6 +164,8 @@ void showInfo() {
         uart_puts("\n");
     }
 }
+
+// Delete the whole string
 void deleteChar(char* buffer) {
     int length = strlen(buffer);
     for (int i = 0; i < length; i++) {
@@ -167,41 +173,57 @@ void deleteChar(char* buffer) {
     }
 }
 
+// Delete one character
 void deleteOneChar() {
     uart_puts("\b \b"); // Move cursor back, overwrite with space, move cursor back again
 }
 
+// Update the baud rate of the UART
 void update_baud_rate(char* buffer, int* baudrate) {
+    // List of allowed baud rates
+    int allowed[] = {9600, 14400, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
     char* token = strtok(buffer, " ");
     token = strtok(NULL, " "); // Skip the first token "baudrate"
     int count = 0;
     int baud_rate = -1;
 
-    while (token != NULL) {
+    // If there is no baud rate specified, print error message
+    if (token == NULL) {
+        uart_puts("No baud rate specified\n");
+        return;
+    }
+
+    // Loop through the tokens to find the baud rate
+    while (token != NULL)
+    {   
+        // If there are multiple baud rates, print error message
         if (count == 1) {
             uart_puts("Multiple baud rate. Please check your command\n");
             return;
         }
-
         baud_rate = atoi(token);
         count++;
-        if (baud_rate <= 0) {
+        int found = 0;
+        for (int i = 0; i < sizeof(allowed)/sizeof(allowed[0]); i++) {
+            if (baud_rate == allowed[i]) {
+                found = 1;
+                break;
+            }
+        }
+        // If the baud rate is not in the list of allowed baud rates, print error message
+        if (!found) {
             uart_puts("Invalid baud rate\n");
             return;
         }
-
         token = strtok(NULL, " ");
     }
+
     if (baud_rate != -1) {
         *baudrate = baud_rate; // Dereference and assign the new value to baudrate
-
-        // Show success message
-        uart_puts("Set up baud rate to ");
-        uart_dec(baud_rate);
-        uart_puts(" successfully\n");
     }
 }
 
+// Update the length of data bits
 void update_data_length(char* buffer, int* length) {
 
     char* token = strtok(buffer, " ");
@@ -209,7 +231,15 @@ void update_data_length(char* buffer, int* length) {
     int count = 0;
     int data_bit_length = -1;
 
+    // If there is no data length specified, print error message
+    if (token == NULL) {
+        uart_puts("No data length specified\n");
+        return;
+    }
+
+    // Loop through the tokens to find the data length
     while (token != NULL) {
+        // If there are multiple data lengths, print error message
         if (count == 1) {
             uart_puts("Multiple data length. Please check your command\n");
             return;
@@ -217,6 +247,7 @@ void update_data_length(char* buffer, int* length) {
 
         data_bit_length = atoi(token);
         count++;
+        // If the data length is not 5, 6, 7 or 8, print error message
         if (data_bit_length != 5 && data_bit_length != 6 && data_bit_length != 7 && data_bit_length != 8) {
             uart_puts("Invalid data length\n");
             return;
@@ -226,22 +257,25 @@ void update_data_length(char* buffer, int* length) {
     }
     if (data_bit_length != -1) {
         *length = data_bit_length; // Dereference and assign the new value to length
-
-        // Show success message
-        uart_puts("Set up the number of data bit to ");
-        uart_dec(data_bit_length);
-        uart_puts(" successfully\n");
     }
 }
 
-
+// Update the number of stop bits
 void update_stop_bit(char* buffer, int* stop) {
     char* token = strtok(buffer, " ");
     token = strtok(NULL, " "); // Skip the first token "stop"
     int count = 0;
     int stop_bit = -1;
 
+    // If there is no stop bit specified, print error message
+    if (token == NULL) {
+        uart_puts("No stop bit specified\n");
+        return;
+    }
+
+    // Loop through the tokens to find the stop bit
     while (token != NULL) {
+        // If there are multiple stop bits, print error message
         if (count == 1) {
             uart_puts("Multiple stop bit. Please check your command\n");
             return;
@@ -249,6 +283,7 @@ void update_stop_bit(char* buffer, int* stop) {
 
         stop_bit = atoi(token);
         count++;
+        // If the stop bit is not 1 or 2, print error message
         if (stop_bit != 1 && stop_bit != 2) {
             uart_puts("Invalid stop bit\n");
             return;
@@ -258,32 +293,38 @@ void update_stop_bit(char* buffer, int* stop) {
     }
     if (stop_bit != -1) {
         *stop = stop_bit; // Dereference and assign the new value to stop
-
-        // Show success message
-        uart_puts("Set up the number of stop bit to ");
-        uart_dec(stop_bit);
-        uart_puts(" successfully\n");
     }
 }
 
+// Update the parity bit
 void update_parity_bit(char* buffer, int* parity) {
     char* token = strtok(buffer, " ");
     token = strtok(NULL, " "); // Skip the first token "parity"
     int count = 0;
     int parity_bit = -1;
 
+    // If there is no parity bit specified, print error message
+    if (token == NULL) {
+        uart_puts("No parity bit configuration specified\n");
+        return;
+    }
+
+    // Loop through the tokens to find the parity bit
     while (token != NULL) {
+        // If there are multiple parity bits, print error message
         if (count == 1) {
             uart_puts("Multiple parity bit. Please check your command\n");
             return;
         }
 
+        // Check if the parity bit is none, odd or even
         if (strcasecmp(token, "none") == 0) {
             parity_bit = 0;
         } else if (strcasecmp(token, "odd") == 0) {
             parity_bit = 1;
         } else if (strcasecmp(token, "even") == 0) {
             parity_bit = 2;
+        // If the parity bit is not none, odd or even, print error message
         } else {
             uart_puts("Invalid parity bit\n");
             return;
@@ -294,51 +335,45 @@ void update_parity_bit(char* buffer, int* parity) {
     }
     if (parity_bit != -1) {
         *parity = parity_bit; // Dereference and assign the new value to parity
-
-        // Show success message
-        uart_puts("Set up");
-        if (parity_bit == 0) {
-            uart_puts(" none");
-        } else if (parity_bit == 1) {
-            uart_puts(" odd");
-        } else if (parity_bit == 2) {
-            uart_puts(" even");
-        }
-        uart_puts(" parity configuration successfully\n");
     }
 }
 
+// Update the handshake control
 void update_handshake_control(char* buffer, int* handshake) {
     char* token = strtok(buffer, " ");
     token = strtok(NULL, " "); // Skip the first token "handshake"
     int count = 0;
     int handshake_status = -1;
 
+    // If there is no handshake control specified, print error message
+    if (token == NULL) {
+        uart_puts("No handshake control specified\n");
+        return;
+    }
+
+    // Loop through the tokens to find the handshake control
     while (token != NULL) {
+        // If there are multiple handshake controls, print error message
         if (count == 1) {
             uart_puts("Multiple handshake status. Please check your command\n");
             return;
         }
 
+        // Check if the handshake control is on or off
         if (strcasecmp(token, "on") == 0) {
             handshake_status = 1;
         } else if (strcasecmp(token, "off") == 0) {
             handshake_status = 0;
         } else {
+        // If the handshake control is not on or off, print error message
             uart_puts("Invalid handshake command\n");
             return;
         }
 
         token = strtok(NULL, " ");
     }
+
     if (handshake_status != -1) {
         *handshake = handshake_status; // Dereference and assign the new value to handshake
-
-        // Show success message
-        if (handshake_status == 0) {
-            uart_puts("CTS/RTS handshaking is turned off\n");
-        } else if (handshake_status == 1) {
-            uart_puts("CTS/RTS handshaking is turned on\n");
-        }
     }
 }

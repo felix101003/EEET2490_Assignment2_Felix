@@ -1,7 +1,7 @@
+// -----------------------------------mbox.c -------------------------------------
 #include "../header/mbox.h"
 #include "../header/gpio.h"
 #include "../header/uart0.h"
-// #include "./gcclib/stdint.h"
 
 /* Mailbox Data Buffer (each element is 32-bit)*/
 /*
@@ -64,9 +64,9 @@ void mailbox_send(uint32_t msg, unsigned char channel)
 int mbox_call(unsigned int buffer_addr, unsigned char channel)
 {
 	// Check Buffer Address
-	//	uart_puts("Buffer Address: ");
-	//	uart_hex(buffer_addr);
-	//	uart_sendc('\n');
+	// uart_puts("Buffer Address: ");
+	// uart_hex(buffer_addr);
+	// uart_sendc('\n');
 
 	// Prepare Data (address of Message Buffer)
 	unsigned int msg = (buffer_addr & ~0xF) | (channel & 0xF);
@@ -75,13 +75,17 @@ int mbox_call(unsigned int buffer_addr, unsigned char channel)
 	/* now wait for the response */
 	/* is it a response to our message (same address)? */
 	if (msg == mailbox_read(channel))
-	{
+	{	
 		/* is it a valid successful response (Response Code) ? */
-		//		if (mbox[1] == MBOX_RESPONSE)
-		//			uart_puts("Got successful response \n");
+		if (mBox[1] == MBOX_RESPONSE) {
+			return (mBox[1] == MBOX_RESPONSE);
+		}
+		// 	uart_puts("Got successful response \n");
+		// else {
+		// 	uart_puts("Cannot get response \n");
+		// }
 
-		return (mBox[1] == MBOX_RESPONSE);
+		
 	}
-
 	return 0;
 }

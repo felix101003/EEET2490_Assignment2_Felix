@@ -1,3 +1,4 @@
+// -----------------------------------uart0.h -------------------------------------
 #include "gpio.h"
 #include "../utils/constant.h"
 #include "../utils/stringProcess.h"
@@ -159,7 +160,7 @@ void uart_hex(unsigned int d);
 void uart_dec(int num);
 void uart_hex_byte(unsigned char byte);
 void configure_baud_rate(int baud_rate);
-void check_baud_rate();
+void check();
 void configure_bit(int data_bit_length, int stop_bit, int parity_bit);
 void configure_handshaking_control(int status);
 int change_bit_length(int data_bit_length);

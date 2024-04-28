@@ -1,5 +1,7 @@
+// -----------------------------------color.c -------------------------------------
 #include "../utils/color.h"
 
+// Define the set of colors available
 char *colors[] = {
     "BLACK",
     "RED",
@@ -8,8 +10,10 @@ char *colors[] = {
     "YELLOW",
     "CYAN",
     "MAGENTA",
-    "WHITE"};
+    "WHITE"
+};
 
+// Define the set of background colors
 char *backgroundColors[] = {
     BLACK_BG,
     RED_BG,
@@ -18,8 +22,10 @@ char *backgroundColors[] = {
     YELLOW_BG,
     CYAN_BG,
     MAGENTA_BG,
-    WHITE_BG};
+    WHITE_BG
+};
 
+// Define the set of text colors
 char *textColors[] = {
     BLACK_TEXT,
     RED_TEXT,
@@ -28,14 +34,15 @@ char *textColors[] = {
     YELLOW_TEXT,
     CYAN_TEXT,
     MAGENTA_TEXT,
-    WHITE_TEXT};
+    WHITE_TEXT
+};
 
+// Function to extract the color from the command
 void setColor(char *cmd)
 {
     char *token = strtok(cmd, " ");
 
-    // Skip the first 2 words "set color"
-    token = strtok(NULL, " ");
+    // Skip the first word "setcolor"
     token = strtok(NULL, " ");
 
     char *textColor = NULL;
@@ -90,8 +97,10 @@ void setColor(char *cmd)
     }
 }
 
+// Function to set the background color
 void setBackgroundColor(char *color)
 {
+    // Loop through the colors to find the matching color
     for (int i = 0; i < MAX_COLOR_SIZE; i++)
     {
         if (strcasecmp(color, colors[i]) == 0)
@@ -100,11 +109,15 @@ void setBackgroundColor(char *color)
             return;
         }
     }
+
+    // Handle invalid color
     uart_puts("Invalid color\n");
 }
 
+// Function to set the text color
 void setTextColor(char *color)
 {
+    // Loop through the colors to find the matching color
     for (int i = 0; i < MAX_COLOR_SIZE; i++)
     {
         if (strcasecmp(color, colors[i]) == 0)
@@ -113,5 +126,6 @@ void setTextColor(char *color)
             return;
         }
     }
+    // Handle invalid color
     uart_puts("Invalid color\n");
 }

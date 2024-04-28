@@ -3,6 +3,8 @@
 #include "../utils/stringProcess.h"
 #include "../utils/color.h"
 
+
+// Define the set of commands available
 char* commands[] = {
     HELP,
     CLEAR,
@@ -15,6 +17,7 @@ char* commands[] = {
     HANDSHAKE,
     CHECK
 };
+
 // Set up the UART by default: baud rate = 115200, data bit length = 8, stop bit = 1, parity bit = none, turn off CTS/RTS handshake
 int baud_rate = 115200;
 int data_bit_length = 8;
@@ -26,11 +29,15 @@ int handshake = 0;
 int current_index = 0;
 int history_index = 0;
 
-// Overwrite the history when it reaches the limit capacity
+// Flag to overwrite the history when it reaches the limit capacity
 int isRenew = 0;
 
+// Flag to update UART configuration
+int isUARTUpdate = 0;
+
 void cli()
-{
+{   
+    // Define the maximum size of the command
     static char cli_buffer[MAX_CMD_SIZE];
     static char history[MAX_HISTORY][MAX_CMD_SIZE];
     static int index = 0;
@@ -46,7 +53,18 @@ void cli()
 
     // Display OS name
     displayOS();
+
+    // If the UART configuration is updated, wait for 1000000 cycles before reinitializing UART. This will help to maintain the OS name before reinitializing UART
+    if (isUARTUpdate == 1) {
+        unsigned int waitTime = 1000000;
+        while (waitTime--) {
+            asm volatile("nop");
+        }
+        uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
+        isUARTUpdate = 0;
+    }
     
+    // Loop to receive characters from keyboard
     while (1) {
         c = uart_getc();
         
@@ -62,16 +80,18 @@ void cli()
         
         // If tab is pressed, display the next matching command (only if there is a match)
         if (c == '\t') {
-            if (match_index > 0) {
-                if (command_index == 0) {
-                    deleteChar(cli_buffer);
-                } else {
-                    deleteChar(match[(command_index-1) % (match_index)]);
-                }
+            if (index > 0) {
+                if (match_index > 0) {
+                    if (command_index == 0) {
+                        deleteChar(cli_buffer);
+                    } else {
+                        deleteChar(match[(command_index-1) % (match_index)]);
+                    }
 
-                index = strlen(match[command_index % match_index]);
-                uart_puts(match[command_index % match_index]); 
-                command_index++;
+                    index = strlen(match[command_index % match_index]);
+                    uart_puts(match[command_index % match_index]); 
+                    command_index++;
+                }
             }
         // UP history
         } else if (c == '_') {
@@ -121,7 +141,8 @@ void cli()
             if ((current_index == initial && isRenew == 1) || (isRenew == 0 && current_index == history_index)) {
                 isDownLim = 1;
             }
-            
+        
+        // Handle backspace and delete key
         } else if (c == 8 || c == 127) {
             if (index > 0) {
                 if (command_index > 0) {
@@ -158,6 +179,7 @@ void cli()
             cli_buffer[index] = '\0';
             uart_puts("\nGot command: ");
             uart_puts(cli_buffer);
+            strcpy(history[history_index % MAX_HISTORY], cli_buffer);
             uart_puts("\n");
             history_index++;
             if (history_index >= MAX_HISTORY)
@@ -168,7 +190,7 @@ void cli()
             current_index = history_index;
 
             /* Compare with supported commands and execute */
-            if (index > 0) {
+            if (index > 0 && index < MAX_CMD_SIZE) {
                 // "help" command
                 if (strncasecmp(cli_buffer, commands[0], strlen(commands[0])) == 0) {
                     displayHelp(cli_buffer, commands);
@@ -188,37 +210,41 @@ void cli()
                 // "baudrate" command
                 } else if (strncasecmp(cli_buffer, commands[4], strlen(commands[4])) == 0) {
                     update_baud_rate(cli_buffer, &baud_rate);
-                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
+                    isUARTUpdate = 1;
                 
                 // "length" command
                 } else if (strncasecmp(cli_buffer, commands[5], strlen(commands[5])) == 0) {
                     update_data_length(cli_buffer, &data_bit_length);
-                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
+                    isUARTUpdate = 1;
 
                 // "stop" command
                 } else if (strncasecmp(cli_buffer, commands[6], strlen(commands[6])) == 0) {
                     update_stop_bit(cli_buffer, &stop_bit);
-                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
+                    isUARTUpdate = 1;
                 
                 // "parity" command
                 } else if (strncasecmp(cli_buffer, commands[7], strlen(commands[7])) == 0) {
                     update_parity_bit(cli_buffer, &parity_bit);
-                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
+                    isUARTUpdate = 1;
                 
                 // "handshake" command
                 } else if (strncasecmp(cli_buffer, commands[8], strlen(commands[8])) == 0) {
                     update_handshake_control(cli_buffer, &handshake);
-                    uart_init(baud_rate, data_bit_length, stop_bit, parity_bit, handshake);
+                    isUARTUpdate = 1;
                 
                 // "check" command
                 } else if (strcasecmp(cli_buffer, commands[9]) == 0) {
-                    check_baud_rate();
+                    check();
                 } else {
                     uart_puts("Command not found\n");
                 }
+            // Print error if the command's length exceeds 100
+            } else if (index >= MAX_CMD_SIZE) {
+                uart_puts("Command is too long\n");
+            // Print error if no command is entered
+            } else {
+                uart_puts("No command entered\n");
             }
-
-            
 
             // Return to command line
             index = 0;

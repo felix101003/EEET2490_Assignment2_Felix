@@ -1,3 +1,4 @@
+// -----------------------------------uart0.c -------------------------------------
 #include "../header/uart0.h"
 
 /**
@@ -9,15 +10,22 @@ void uart_init(int baud_rate, int data_bit_length, int stop_bit, int parity_bit,
 
 	/* Turn off UART0 */
 	UART0_CR = 0x0;
-	/* Setup GPIO pins 36 and 37 */
+	
+	
+	/* Set GPIO14 and GPIO15 to be pl011 TX/RX which is ALT0	*/
+	r = GPFSEL1;
 
-	/* Set GPIO36 and GPIO37 to be pl011 TX/RX which is ALT2	*/
-	r = GPFSEL3;
-	r &= ~((7 << 18) | (7 << 21));		/// clear bits 23-18 (FSEL36, FSEL37)
-	r |= (0b110 << 18) | (0b110 << 21); // Set value 0b110 (select ALT2: TXD0/RXD0)
-	GPFSEL3 = r;
+	/* Setup GPIO pins 14, 15, 16 and 17 */
+	if (handshake == 0) {
+		r &=  ~((7 << 12) | (7 << 15) | (7 << 18) | (7 << 21)); //clear bits 23-12 (FSEL15, FSEL14, FSEL16, FSEL17)
+		r |= (0b100 << 12)|(0b100 << 15);   //Set value 0b100 (select ALT0: TXD0/RXD0)
+	} else {
+		r &=  ~((7 << 12) | (7 << 15) | (7 << 18) | (7 << 21)); //clear bits 23-12 (FSEL15, FSEL14, FSEL16, FSEL17)
+		r |= (0b100 << 12)|(0b100 << 15) | (0b111 << 18) | (0b111 << 21);   //Set value 0b100 (select ALT0: TXD0/RXD0), value 0b111 (select ALT3: CTS0/RTS0)
+	}
+	GPFSEL1 = r;
 
-	/* enable GPIO 36, 37 */
+	/* enable GPIO 14, 15, 16 and 17 */
 #ifdef RPI3	   // RPI3
 	GPPUD = 0; // No pull up/down control
 	// Toogle clock to flush GPIO setup
@@ -26,18 +34,22 @@ void uart_init(int baud_rate, int data_bit_length, int stop_bit, int parity_bit,
 	{
 		asm volatile("nop");
 	}								 // waiting 150 cycles
-	GPPUDCLK1 = (1 << 4) | (1 << 5); // enable clock for GPIO 36, 37
+	GPPUDCLK0 = (1 << 14)|(1 << 15)| (1<<16) | (1<<17); //enable clock for GPIO 14, 15
 	r = 150;
 	while (r--)
 	{
 		asm volatile("nop");
 	}			   // waiting 150 cycles
-	GPPUDCLK1 = 0; // flush GPIO setup
+	GPPUDCLK0 = 0;        // flush GPIO setup
 
 #else // RPI4
-	r = GPIO_PUP_PDN_CNTRL_REG2;
-	r &= ~((3 << 8) | (3 << 10)); // No resistor is selected for GPIO 36, 37
-	GPIO_PUP_PDN_CNTRL_REG2 = r;
+	r = GPIO_PUP_PDN_CNTRL_REG0;
+	r &= ~((3 << 28) | (3 << 30)); //No resistor is selected for GPIO 14, 15
+	GPIO_PUP_PDN_CNTRL_REG0 = r;
+
+	r = GPIO_PUP_PDN_CNTRL_REG1;
+	r &= ~((3 << 0) | (3 << 2)); //No resistor is selected for GPIO 16, 17
+	GPIO_PUP_PDN_CNTRL_REG1 = r;
 #endif
 
 	/* Mask all interrupts. */
@@ -46,12 +58,6 @@ void uart_init(int baud_rate, int data_bit_length, int stop_bit, int parity_bit,
 	/* Clear pending interrupts. */
 	UART0_ICR = 0x7FF;
 
-	/* Set integer & fractional part of Baud rate
-	Divider = UART_CLOCK/(16 * Baud)
-	Default UART_CLOCK = 48MHz (old firmware it was 3MHz);
-	Integer part register UART0_IBRD  = integer part of Divider
-	Fraction part register UART0_FBRD = (Fractional part * 64) + 0.5 */
-
 	// Baud rate
 	configure_baud_rate(baud_rate);
 
@@ -59,7 +65,6 @@ void uart_init(int baud_rate, int data_bit_length, int stop_bit, int parity_bit,
 	configure_bit(data_bit_length, stop_bit, parity_bit);
 
 	/* Enable UART0, receive, and transmit */
-	// UART0_CR = 0x301; // enable Tx, Rx, FIFO
 	configure_handshaking_control(handshake);
 }
 
@@ -161,8 +166,8 @@ void uart_dec(int num)
 // Display a byte in hexadecimal format
 void uart_hex_byte(unsigned char byte) {
 	char hexChars[] = "0123456789ABCDEF";
-    uart_sendc(hexChars[(byte >> 4) & 0x0F]);
-    uart_sendc(hexChars[byte & 0x0F]);
+    uart_sendc(hexChars[(byte >> 4) & 0xF]);
+    uart_sendc(hexChars[byte & 0xF]);
 }
 
 // Function to configure the baud rate of the UART
@@ -186,7 +191,7 @@ void configure_bit(int data_bit_length, int stop_bit, int parity_bit) {
 // Function to configure handshake control of the UART
 void configure_handshaking_control(int status) {
     if (status == 1) {
-        UART0_CR = UART0_CR_CTSEN | UART0_CR_RTSEN | 0x301;
+        UART0_CR = 0xC301;
     } else {
         UART0_CR = 0x301;
     }
@@ -234,11 +239,18 @@ int change_parity_bit(int parity_bit) {
 	}
 }
 
-
-void check_baud_rate() {
+// Function to check UART configuration
+void check() {
 	// Check baud rate
-	uart_puts("Baud rate: ");
-	uart_dec(UART_CLOCK / (16 * (UART0_IBRD + (float) UART0_FBRD / 64)));
+	uart_puts("UART0_IBRD: ");
+	int number1 = UART0_IBRD;
+	uart_dec(number1);
+	uart_puts("\nUART0_FBRD: ");
+	int number2 = UART0_FBRD;
+	uart_dec(number2);
+	uart_puts("\nBaud rate (approx): ");
+	int result = UART_CLOCK / (16 * (number1 + (float) number2 / 64));
+	uart_dec(result);
 	uart_puts("\n");
 
 	// Check number of data bit
@@ -282,7 +294,7 @@ void check_baud_rate() {
 
 	uart_puts("Handshake control: ");
 
-	if (UART0_CR == (UART0_CR_CTSEN | UART0_CR_RTSEN | 0x301)) {
+	if (UART0_CR == 0xC301 && GPFSEL1 & (0b111 << 18) && GPFSEL1 & (0b111 << 21)) {
 		uart_puts("CTS/RTS handshake is enabled\n");
 	} else {
 		uart_puts("CTS/RTS handshake is disabled\n");
